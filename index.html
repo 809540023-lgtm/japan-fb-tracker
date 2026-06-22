@@ -87,7 +87,7 @@ fetch("/api/events").then(function(r){return r.json();}).then(function(d){
       '<td><a href="'+r.url+'" target="_blank" rel="noopener">官網</a>'+(r.dir?' · <a href="'+r.dir+'" target="_blank" rel="noopener">名錄</a>':'')+'</td></tr>';
   }).join("");
 
-  document.getElementById("foot").innerHTML='共 '+rows.length+' 檔即將舉辦 · 開展前約 1 個月提醒 · 由 Render Cron Job 每週自動刷新。';
+  document.getElementById("foot").innerHTML='共 '+rows.length+' 檔即將舉辦 · 開展前約 1 個月提醒 · 資料每日自動重算、每週自動更新。';
 }).catch(function(e){
   document.getElementById("updated").textContent="載入失敗："+e;
 });
