@@ -1,24 +1,17 @@
-# Render 藍圖：一個網站 + 一個每週 Cron Job
-# 在 Render 用 "New +" → "Blueprint" 連到這個 repo，會自動建立以下兩個服務。
+# Render 藍圖：一個免費 Web 網站（儀表板 + API）
+# 在 Render 用 "New +" → "Blueprint" 連到這個 repo，會自動建立下面的服務。
+#
+# 為什麼沒有 Cron Job？
+#   Render 的 Cron Job 不支援免費方案，所以這裡只放免費 Web 服務。
+#   每週自動更新由兩個免費機制負責：
+#     1) 免費方案閒置會休眠，有人開啟網站時冷啟動會自動重抓最新資料、重算倒數天數；
+#        網站本身也有 6 小時 TTL 快取，天數每天都會更新。
+#     2) 你的 Cowork 每週排程（japan-fb-tracker-weekly）照樣每週檢查並通知即將開展的展會。
+#   若日後想要 Render 端的自動排程，可把 Cron Job 升級為付費方案再加回來。
 services:
-  # ① 網站（儀表板 + API），24 小時提供公開網址
   - type: web
     name: japan-fb-tracker
     runtime: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
     startCommand: "uvicorn app:app --host 0.0.0.0 --port $PORT"
-
-  # ② 每週一自動跑：呼叫網站 /refresh 重新抓資料，(可選)推播即將開展的展會
-  - type: cron
-    name: japan-fb-tracker-weekly
-    runtime: python
-    plan: free
-    schedule: "0 0 * * 1"          # 每週一 00:00 UTC（≈ 台北週一 08:00）
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python refresh_job.py"
-    envVars:
-      - key: SERVICE_URL           # 部署後填入網站網址，見 README
-        sync: false
-      - key: SLACK_WEBHOOK         # 選填：Slack/Discord webhook，用來推播通知
-        sync: false
