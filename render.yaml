@@ -1,0 +1,24 @@
+# Render 藍圖：一個網站 + 一個每週 Cron Job
+# 在 Render 用 "New +" → "Blueprint" 連到這個 repo，會自動建立以下兩個服務。
+services:
+  # ① 網站（儀表板 + API），24 小時提供公開網址
+  - type: web
+    name: japan-fb-tracker
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app:app --host 0.0.0.0 --port $PORT"
+
+  # ② 每週一自動跑：呼叫網站 /refresh 重新抓資料，(可選)推播即將開展的展會
+  - type: cron
+    name: japan-fb-tracker-weekly
+    runtime: python
+    plan: free
+    schedule: "0 0 * * 1"          # 每週一 00:00 UTC（≈ 台北週一 08:00）
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python refresh_job.py"
+    envVars:
+      - key: SERVICE_URL           # 部署後填入網站網址，見 README
+        sync: false
+      - key: SLACK_WEBHOOK         # 選填：Slack/Discord webhook，用來推播通知
+        sync: false

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>日本食品・飲料展會追蹤</title>
+<style>
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:#f5f6f8;color:#1a2230;font-family:-apple-system,"Segoe UI",Roboto,"Noto Sans TC","Hiragino Sans",sans-serif;line-height:1.5}
+.wrap{max-width:1000px;margin:0 auto;padding:20px}
+header h1{font-size:21px;margin:0 0 4px}
+header .sub{color:#5b6473;font-size:13px}
+.updated{margin-top:6px;font-size:12px;color:#8a93a3}
+h2{font-size:15px;margin:26px 0 10px;display:flex;align-items:center;gap:8px}
+.pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fff3d6;color:#9a7400}
+.alertwrap{display:grid;gap:10px}
+.card{background:#fff;border:1px solid #e6e9ef;border-left:4px solid #c9ced8;border-radius:10px;padding:12px 14px}
+.card.soon{border-left-color:#e6a700;background:#fffdf5}
+.card.live{border-left-color:#e5484d;background:#fff6f6}
+.card .nm{font-weight:600;font-size:14px}
+.card .meta{font-size:12.5px;color:#5b6473;margin-top:3px}
+.card .cd{float:right;text-align:right;font-size:12px;color:#5b6473}
+.card .cd b{display:block;font-size:20px;line-height:1.1;color:#1a2230}
+.empty{color:#8a93a3;font-size:13px;background:#fff;border:1px dashed #d8dce4;border-radius:10px;padding:14px}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e6e9ef;border-radius:10px;overflow:hidden;font-size:13px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid #eef0f4;vertical-align:top}
+th{background:#eef2f7;font-size:12px;color:#41495a;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+tr:hover td{background:#fafbfc}
+.nm-cell{font-weight:600;min-width:200px}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;margin-left:6px}
+.tag.live{background:#fdecec;color:#c0282d}
+.tag.soon{background:#fff3d6;color:#9a7400}
+.dys{font-variant-numeric:tabular-nums;white-space:nowrap}
+.dys.s{color:#9a7400;font-weight:700}.dys.l{color:#c0282d;font-weight:700}
+a{color:#0b6e99;text-decoration:none}a:hover{text-decoration:underline}
+.muted{color:#aab2bf}
+footer{margin-top:18px;font-size:12px;color:#8a93a3}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🍱 日本食品・飲料展會追蹤</h1>
+    <div class="sub">自動追蹤日本即將舉辦的食品・飲料實體展會，開展前約 1 個月提醒。</div>
+    <div class="updated" id="updated">載入中…</div>
+  </header>
+
+  <h2>🔔 即將開展 / 進行中 <span class="pill" id="soonCount"></span></h2>
+  <div class="alertwrap" id="alerts"></div>
+
+  <h2>📅 全部即將舉辦的展會</h2>
+  <table><thead><tr><th>展會</th><th>日期</th><th>倒數</th><th>地點</th><th>連結</th></tr></thead>
+  <tbody id="rows"></tbody></table>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+function fmt(s){var p=s.split("-");return p[0]+"/"+p[1]+"/"+p[2];}
+function range(e){var a=e.start.split("-"),b=e.end.split("-");
+  return (a[0]===b[0]&&a[1]===b[1]) ? a[0]+"/"+a[1]+"/"+a[2]+"–"+b[2] : fmt(e.start)+" – "+fmt(e.end);}
+
+fetch("/api/events").then(function(r){return r.json();}).then(function(d){
+  document.getElementById("updated").textContent="資料更新日："+fmt(d.updated)+"　·　每週自動更新";
+  var rows=d.events||[], alerts=d.alerts||[];
+
+  document.getElementById("soonCount").textContent=alerts.length;
+  var ah=document.getElementById("alerts");
+  ah.innerHTML = alerts.length ? alerts.map(function(r){
+    var cd = r.status==="live" ? '<b>進行中</b>展期內' : '<b>'+r.daysUntil+'</b>天後開展';
+    var ex = (r.exhibitors!=null) ? '　·　參展商 '+r.exhibitors+' 家' : '';
+    return '<div class="card '+r.status+'"><div class="cd">'+cd+'</div>'+
+      '<div class="nm">'+r.name+'</div>'+
+      '<div class="meta">'+range(r)+'　·　'+r.venue+(r.note?'　·　'+r.note:'')+ex+'</div>'+
+      '<div class="meta"><a href="'+r.url+'" target="_blank" rel="noopener">官方網站 ↗</a>'+
+        (r.dir?'　|　<a href="'+r.dir+'" target="_blank" rel="noopener">參展商名錄 ↗</a>':'')+'</div></div>';
+  }).join("") : '<div class="empty">目前 30 天內沒有即將開展的展會。</div>';
+
+  document.getElementById("rows").innerHTML=rows.map(function(r){
+    var tag=r.status==="live"?'<span class="tag live">進行中</span>':(r.status==="soon"?'<span class="tag soon">即將</span>':'');
+    var dc=r.status==="live"?'l':(r.status==="soon"?'s':'');
+    var dt=r.status==="live"?'展期內':(r.daysUntil+" 天");
+    return '<tr><td class="nm-cell">'+r.name+tag+'<div class="muted" style="font-weight:400;font-size:11.5px">'+(r.note||'')+'</div></td>'+
+      '<td class="dys">'+range(r)+'</td><td class="dys '+dc+'">'+dt+'</td><td>'+r.venue+'</td>'+
+      '<td><a href="'+r.url+'" target="_blank" rel="noopener">官網</a>'+(r.dir?' · <a href="'+r.dir+'" target="_blank" rel="noopener">名錄</a>':'')+'</td></tr>';
+  }).join("");
+
+  document.getElementById("foot").innerHTML='共 '+rows.length+' 檔即將舉辦 · 開展前約 1 個月提醒 · 由 Render Cron Job 每週自動刷新。';
+}).catch(function(e){
+  document.getElementById("updated").textContent="載入失敗："+e;
+});
+</script>
+</body>
+</html>
